@@ -33,7 +33,10 @@ class BookDetailScreen extends StatelessWidget {
                       favState is FavoritesLoaded &&
                       favState.favorites.contains(workId);
                   return IconButton(
-                    icon: Icon(isFav ? Icons.star : Icons.star_border),
+                    icon: Icon(
+                      isFav ? Icons.star : Icons.star_border,
+                      color: isFav ? Colors.yellow : null,
+                    ),
                     onPressed:
                         () => ctx.read<FavoritesBloc>().add(
                           ToggleFavorite(workId),

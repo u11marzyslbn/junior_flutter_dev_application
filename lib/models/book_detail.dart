@@ -61,4 +61,24 @@ class BookDetail {
     }
     return '';
   }
+
+  BookDetail copyWith({
+    String? title,
+    List<String>? authors,
+    String? description,
+    int? pages,
+    List<String>? subjects,
+    int? coverId,
+    int? firstPublishYear,
+  }) {
+    return BookDetail(
+      title: title ?? this.title,
+      authors: authors ?? this.authors,
+      description: description ?? this.description,
+      pages: pages ?? this.pages,
+      subjects: subjects ?? this.subjects,
+      coverId: coverId ?? this.coverId,
+      firstPublishYear: firstPublishYear ?? this.firstPublishYear,
+    );
+  }
 }

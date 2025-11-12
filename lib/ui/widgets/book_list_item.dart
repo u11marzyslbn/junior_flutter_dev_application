@@ -29,7 +29,10 @@ class BookListItem extends StatelessWidget {
           final isFav =
               state is FavoritesLoaded && state.favorites.contains(book.workId);
           return IconButton(
-            icon: Icon(isFav ? Icons.star : Icons.star_border),
+            icon: Icon(
+              isFav ? Icons.star : Icons.star_border,
+              color: isFav ? Colors.yellow : null,
+            ),
             onPressed:
                 () =>
                     ctx.read<FavoritesBloc>().add(ToggleFavorite(book.workId)),

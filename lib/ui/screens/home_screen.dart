@@ -28,28 +28,32 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final pages = [_buildListPage(), const FavoritesScreen()];
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book Explorer'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              onSubmitted: _onSearchSubmitted,
-              decoration: InputDecoration(
-                hintText: 'Search books',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () => _onSearchSubmitted(_searchController.text),
+      appBar:
+          _selectedIndex == 0
+              ? AppBar(
+                title: const Text('Book Explorer'),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(56),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _searchController,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: _onSearchSubmitted,
+                      decoration: InputDecoration(
+                        hintText: 'Search books',
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed:
+                              () => _onSearchSubmitted(_searchController.text),
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
                 ),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ),
-        ),
-      ),
+              )
+              : AppBar(title: const Text('Favorites')),
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

@@ -25,6 +25,41 @@ class BookRepository {
 
   Future<BookDetail> fetchBookDetail(String workId) async {
     final raw = await api.fetchWorkDetail(workId);
-    return BookDetail.fromJson(raw);
+
+    final authorsRaw = raw['authors'] as List<dynamic>?;
+    final List<String> authorKeys = [];
+    if (authorsRaw != null) {
+      for (final a in authorsRaw) {
+        if (a is Map) {
+          final candidate =
+              (a['author'] is Map ? (a['author']['key'] ?? '') : a['key'] ?? '')
+                  as String;
+          if (candidate.isNotEmpty) authorKeys.add(candidate);
+        } else if (a is String) {
+          authorKeys.add(a);
+        }
+      }
+    }
+
+    final List<String> authorNames = [];
+    for (final k in authorKeys) {
+      try {
+        final cleaned =
+            k.startsWith('/') ? k : (k.startsWith('authors/') ? '/$k' : k);
+        final name = await api.fetchAuthorName(cleaned);
+        if (name.isNotEmpty) {
+          authorNames.add(name);
+        } else {
+          authorNames.add(k);
+        }
+      } catch (_) {
+        authorNames.add(k);
+      }
+    }
+
+    final detail = BookDetail.fromJson(raw);
+    return detail.copyWith(
+      authors: authorNames.isNotEmpty ? authorNames : detail.authors,
+    );
   }
 }

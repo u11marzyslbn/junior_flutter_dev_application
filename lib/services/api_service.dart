@@ -1,6 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  ApiException(this.statusCode, this.message);
+  @override
+  String toString() => 'ApiException($statusCode): $message';
+}
+
 class ApiService {
   final http.Client _client;
   ApiService([http.Client? client]) : _client = client ?? http.Client();
@@ -10,7 +18,9 @@ class ApiService {
       'https://openlibrary.org/subjects/$subject.json?limit=$limit',
     );
     final resp = await _client.get(url).timeout(const Duration(seconds: 10));
-    if (resp.statusCode != 200) throw Exception('Failed to load subject');
+    if (resp.statusCode != 200) {
+      throw ApiException(resp.statusCode, 'Failed to load subject');
+    }
     final j = jsonDecode(resp.body) as Map<String, dynamic>;
     return (j['works'] as List<dynamic>?) ?? [];
   }
@@ -21,7 +31,9 @@ class ApiService {
       'limit': '$limit',
     });
     final resp = await _client.get(url).timeout(const Duration(seconds: 10));
-    if (resp.statusCode != 200) throw Exception('Search failed');
+    if (resp.statusCode != 200) {
+      throw ApiException(resp.statusCode, 'Search failed');
+    }
     final j = jsonDecode(resp.body) as Map<String, dynamic>;
     return (j['docs'] as List<dynamic>?) ?? [];
   }
@@ -30,7 +42,28 @@ class ApiService {
     final id = workId.startsWith('/works/') ? workId.split('/').last : workId;
     final url = Uri.parse('https://openlibrary.org/works/$id.json');
     final resp = await _client.get(url).timeout(const Duration(seconds: 10));
-    if (resp.statusCode != 200) throw Exception('Work not found');
+    if (resp.statusCode != 200) {
+      throw ApiException(resp.statusCode, 'Work not found: $workId');
+    }
     return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
+  Future<String> fetchAuthorName(String authorKey) async {
+    if (authorKey.isEmpty) return '';
+    String path;
+    if (authorKey.startsWith('/')) {
+      path = authorKey;
+    } else if (authorKey.startsWith('authors/')) {
+      path = '/$authorKey';
+    } else {
+      path = '/authors/$authorKey';
+    }
+    final url = Uri.parse('https://openlibrary.org$path.json');
+    final resp = await _client.get(url).timeout(const Duration(seconds: 10));
+    if (resp.statusCode != 200) {
+      throw ApiException(resp.statusCode, 'Author not found for $authorKey');
+    }
+    final j = jsonDecode(resp.body) as Map<String, dynamic>;
+    return (j['name'] ?? '') as String;
   }
 }
