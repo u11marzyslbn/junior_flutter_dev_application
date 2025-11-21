@@ -1,13 +1,17 @@
+import 'dart:developer';
+
 import '../models/book.dart';
 import '../models/book_detail.dart';
 import '../services/api_service.dart';
+
+const String kDefaultSubject = 'fiction';
 
 class BookRepository {
   final ApiService api;
   BookRepository({required this.api});
 
   Future<List<Book>> fetchSubjectBooks({
-    String subject = 'fiction',
+    String subject = kDefaultSubject,
     int limit = 20,
   }) async {
     final raw = await api.fetchSubject(subject, limit: limit);
@@ -52,7 +56,9 @@ class BookRepository {
         } else {
           authorNames.add(k);
         }
-      } catch (_) {
+      } catch (e, st) {
+        // Log error but continue with fallback
+        log('Failed to fetch author $k: $e', stackTrace: st);
         authorNames.add(k);
       }
     }

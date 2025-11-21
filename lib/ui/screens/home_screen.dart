@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -19,9 +21,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
 
   void _onSearchSubmitted(String q) {
     context.read<BookListBloc>().add(SearchBooks(q));
+  }
+
+  void _onSearchChanged(String q) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      context.read<BookListBloc>().add(SearchBooks(q));
+    });
   }
 
   @override
@@ -39,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: TextField(
                       controller: _searchController,
                       textInputAction: TextInputAction.search,
+                      onChanged: _onSearchChanged,
                       onSubmitted: _onSearchSubmitted,
                       decoration: InputDecoration(
                         hintText: 'Search books',
@@ -104,5 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return const SizedBox.shrink();
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 }

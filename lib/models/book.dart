@@ -56,10 +56,10 @@ class Book {
     );
   }
 
-  String get coverUrl {
+  String? get coverUrl {
     if (coverId != null) {
       return 'https://covers.openlibrary.org/b/id/$coverId-M.jpg';
     }
-    return '';
+    return null;
   }
 }

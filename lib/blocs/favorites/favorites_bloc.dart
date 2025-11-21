@@ -10,17 +10,20 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
   FavoritesBloc({required this.favoritesRepository})
     : super(FavoritesInitial()) {
     on<LoadFavorites>((e, emit) {
-      _favorites = favoritesRepository.loadFavorites();
-      emit(FavoritesLoaded(_favorites));
+      final loaded = favoritesRepository.loadFavorites();
+      _favorites = Set<String>.from(loaded);
+      emit(FavoritesLoaded(Set.unmodifiable(_favorites)));
     });
     on<ToggleFavorite>((e, emit) async {
-      if (_favorites.contains(e.workId)) {
-        _favorites.remove(e.workId);
+      final newFavorites = Set<String>.from(_favorites);
+      if (newFavorites.contains(e.workId)) {
+        newFavorites.remove(e.workId);
       } else {
-        _favorites.add(e.workId);
+        newFavorites.add(e.workId);
       }
-      await favoritesRepository.saveFavorites(_favorites);
-      emit(FavoritesLoaded(Set.from(_favorites)));
+      await favoritesRepository.saveFavorites(newFavorites);
+      _favorites = newFavorites;
+      emit(FavoritesLoaded(Set.unmodifiable(_favorites)));
     });
   }
 }

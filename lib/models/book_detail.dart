@@ -55,11 +55,11 @@ class BookDetail {
     );
   }
 
-  String get coverUrl {
+  String? get coverUrl {
     if (coverId != null) {
       return 'https://covers.openlibrary.org/b/id/$coverId-L.jpg';
     }
-    return '';
+    return null;
   }
 
   BookDetail copyWith({

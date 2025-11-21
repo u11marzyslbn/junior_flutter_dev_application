@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/favorites/favorites_bloc.dart';
 import '../../blocs/favorites/favorites_state.dart';
 import '../../repositories/book_repository.dart';
+import '../../models/book_detail.dart';
 import '../widgets/loading_widget.dart';
 import 'book_detail_screen.dart';
 
@@ -17,6 +18,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<String>? _searchResults;
   bool _notFound = false;
+  Map<String, BookDetail?> _details = {};
+  Set<String> _lastFetched = {};
 
   Future<void> _performSearch(String query, Set<String> favorites) async {
     final q = query.trim();
@@ -38,9 +41,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               final detail = await context
                   .read<BookRepository>()
                   .fetchBookDetail(workId);
-              final title = (detail.title as String?) ?? '';
-              final authorsList = detail.authors as List<dynamic>?;
-              final authors = authorsList?.join(', ') ?? '';
+              final title = detail.title;
+              final authorsList = detail.authors;
+              final authors = authorsList.join(', ');
               final hay = '$title $authors $workId'.toLowerCase();
               if (hay.contains(q.toLowerCase())) matched.add(workId);
             } catch (_) {}
@@ -67,6 +70,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         if (state is FavoritesInitial) return const LoadingWidget();
         if (state is FavoritesLoaded) {
           final favs = state.favorites;
+          // If favorites changed, prefetch details
+          if (!Set.of(favs).containsAll(_lastFetched) ||
+              !_lastFetched.containsAll(favs)) {
+            // schedule async fetch outside of build
+            Future.microtask(() => _fetchAllDetails(favs));
+          }
           if (favs.isEmpty) {
             return const Center(child: Text('No favorites yet'));
           }
@@ -98,44 +107,32 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   itemCount: listToShow.length,
                   itemBuilder: (context, index) {
                     final workId = listToShow[index];
-                    return FutureBuilder(
-                      future: context.read<BookRepository>().fetchBookDetail(
-                        workId,
-                      ),
-                      builder: (context, snap) {
-                        if (snap.connectionState != ConnectionState.done) {
-                          return const ListTile(title: Text('Loading...'));
-                        }
-                        if (snap.hasError) {
-                          return ListTile(title: Text('Error loading $workId'));
-                        }
-                        final detail = snap.data as dynamic;
-                        final title = (detail?.title as String?) ?? workId;
-                        final authors =
-                            (detail?.authors as List<dynamic>?)?.join(', ') ??
-                            '';
-                        return ListTile(
-                          leading:
-                              (detail?.coverUrl as String?)?.isNotEmpty == true
-                                  ? Image.network(
-                                    detail.coverUrl as String,
-                                    width: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (_, __, ___) => const Icon(Icons.book),
-                                  )
-                                  : const Icon(Icons.book),
-                          title: Text(title),
-                          subtitle: Text(authors),
-                          onTap:
-                              () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => BookDetailScreen(workId: workId),
-                                ),
-                              ),
-                        );
-                      },
+                    final detail = _details[workId];
+                    if (detail == null) {
+                      return const ListTile(title: Text('Loading...'));
+                    }
+                    final title = detail.title;
+                    final authors = detail.authors.join(', ');
+                    final cover = detail.coverUrl;
+                    return ListTile(
+                      leading:
+                          cover != null
+                              ? Image.network(
+                                cover,
+                                width: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => const Icon(Icons.book),
+                              )
+                              : const Icon(Icons.book),
+                      title: Text(title),
+                      subtitle: Text(authors),
+                      onTap:
+                          () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BookDetailScreen(workId: workId),
+                            ),
+                          ),
                     );
                   },
                 ),
@@ -146,5 +143,25 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         return const SizedBox.shrink();
       },
     );
+  }
+
+  Future<void> _fetchAllDetails(Set<String> favs) async {
+    final repo = context.read<BookRepository>();
+    _lastFetched = Set<String>.from(favs);
+    final futures = favs.map((id) async {
+      try {
+        final d = await repo.fetchBookDetail(id);
+        return MapEntry(id, d);
+      } catch (e) {
+        // log and return null for this id
+        // ignore: avoid_print
+        print('Failed to load detail for $id: $e');
+        return MapEntry(id, null);
+      }
+    });
+    final results = await Future.wait(futures);
+    setState(() {
+      _details = Map.fromEntries(results);
+    });
   }
 }

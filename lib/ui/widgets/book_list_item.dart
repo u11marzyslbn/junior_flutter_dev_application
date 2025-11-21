@@ -14,9 +14,9 @@ class BookListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading:
-          book.coverUrl.isNotEmpty
+          book.coverUrl != null
               ? Image.network(
-                book.coverUrl,
+                book.coverUrl!,
                 width: 50,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const Icon(Icons.book),

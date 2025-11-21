@@ -64,10 +64,10 @@ class BookDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (d.coverUrl.isNotEmpty)
+                      if (d.coverUrl != null)
                         Center(
                           child: Image.network(
-                            d.coverUrl,
+                            d.coverUrl!,
                             height: 300,
                             fit: BoxFit.cover,
                           ),
